@@ -1,0 +1,43 @@
+---
+title: "ML Assignment 1"
+author: "Ben Weisenburger"
+date: "2022-09-16"
+output: html_document
+---
+
+```{r}
+mydata<-read.csv("netflix_titles.csv")
+```
+The above line of code imports our data set.  This data set deals with Netflix and provides information on a handful of movies offered on the platform.  Some of the key information that this data set provides is: title, country of production, duration of show/movie, rating, and release year. The source of this data is kaggle.com
+```{r}
+mydata1<-mydata[,-c(1,2,4,5,7,11,12)]
+```
+The above line of code removes variables that are not useful in this analysis.  For example, one of the variables that I removed was movie description. This is not a variable that can be analyzed or compared.  I kept the most important and relevant variables for this assignment.
+```{r}
+summary(mydata1$duration)
+sd(mydata1$duration)
+```
+The first above line of code prints descriptive statistics for a quantitative variable, the movie duration. The mean is 104.8 minutes and the median is 102.5 minutes. The second line of code prints the standard deviation, which is 26.53 minutes
+```{r}
+table(mydata1$rating)
+```
+The above line of code provides descriptive statistics for a categorical variable, the recommended age category rating for each movie.  The most common are TV-14 and TV-MA at 15 each, while the least common are G and TV-G at 1 each. TV-14 and TV-MA rated movies make up a combined 35.7% (30/84) of the 84 observations, where as G and TV-G only make up a combined 2.4% of the 84 observations (2/84).
+```{r}
+library(dplyr)
+arrange(mydata1, duration)
+as.numeric<-(mydata1$title)
+```
+The above two lines of codes are examples of data transformation. The first line, using the arrange() function, arranges the data by the duration of the movie, in ascending order. The second line, using the as.numeric() function, transforms the title names of the movies from character to numeric. 
+```{r}
+hist(mydata1$duration,breaks=20,main="Duration of Netflix Movies (in minutes)",col="red")
+```
+The above line of code creates a histogram that displays the most frequent duration, in minutes, of the 84 observed Netflix movies in this data set. I chose an appropriate bin width with the "breaks" argument, I added a title to the histogram with the "main" argument, and lastly I added some color to the histogram with the "col" argument.
+```{r}
+plot(mydata1$release_year,mydata1$duration, main="Duration vs. Release Year",xlab="Release Year",ylab="Duration")
+abline(lm(duration~release_year,data=mydata1),col='blue')
+```
+The above line of code creates a scatter plot comparing the only two numeric variables in this data set, the duration of the movie and the release year of the movie.  I plotted the release year on the x-axis and the duration on the y-axis, hoping to see if there is any relation between the length of a movie and what year it was released.  The goal of comparing these two variables is to see if movies have on-average lengthened or shortened over time.
+
+As the plot shows, there is a weak, but visible correlation between movie release year and duration of movie.  With this data set, it appears that as time has gone on, movies have gotten shorter in duration.
+
+To create this scatter plot, I used the plot() function. I entered the two variables that I wanted to compare, and then I added a title and labels to the x and y axis.  I decided to also add a regression line, utilizing the abline() and lm() functions. I added this line to see if there was definitive proof of any correlation, as it was difficult to guess based on the scatter plot points alone.
