@@ -1,0 +1,120 @@
+---
+title: "ML Assignment 2"
+author: "Ben Weisenburger"
+date: "2022-10-02"
+output: html_document
+---
+
+```{r}
+mydata<-read.csv("UniversalBank.csv")
+mydata1<-mydata[,-c(1,5)]
+```
+The above lines of code simply import the data set into R, and then remove variables "ID" and "Zip Code", as requested per the instructions.
+```{r}
+mydata1$Education<-as.character(mydata1$Education,labels=c('Education_1','Education_2','Education_3'))
+```
+This line of code changes the integer values of mydata1$Education to characters, to make it easier to create dummy variables.
+```{r}
+library(caret)
+q<-class2ind(as.factor(mydata$Education))
+colnames(q)<-c('Edu1','Edu2','Edu3')
+mydata2<-cbind(mydata1[,1:5],q,mydata1[,7:12])
+```
+The above lines of code create 3 new variables, dummy variables for the 3 types of Education.  These then replace the original Education variable.  Key elements in this code include dummyVars to create an index of the dummy variables, and then cbind to modify mydata1 into a new mydata2 including the dummy variables.
+```{r}
+model_mydata2_normalized<-preProcess(mydata2,method="range")
+mydata2_normalized=predict(model_mydata2_normalized,mydata2)
+mydata2_normalized<-mydata2_normalized[,c(10,1,2,3,4,5,6,7,8,9,11,12,13,14)]
+```
+The above code normalizes the data to prepare it for kNN modeling.
+```{r}
+set.seed(123)
+mydata2_normalized$Personal.Loan<-as.factor(mydata2_normalized$Personal.Loan)
+model<-train(Personal.Loan~Age+Income+Experience+Family+CCAvg+Edu1+Edu2+Edu3+Mortgage+Securities.Account+CD.Account+Online+CreditCard,data=mydata2_normalized,method="knn")
+model
+```
+QUESTION 2 ANSWER (answers are slightly out of order based on how I wrote my code, I apologize): The above code uses the train command to optimize the best value for "k", our hyperparameter, which ends up being 5.  As asked in question 2 of the assignment, this is a choice of k that balances between overfitting and completely ignoring the predictor information.
+```{r}
+library("caret")
+set.seed(123)
+index<-createDataPartition(mydata2_normalized$Personal.Loan,p=0.6,list=FALSE)
+training<-mydata2_normalized[index,]
+validation<-mydata2_normalized[-index,]
+```
+The above code creates an index for splitting the data into both a training and validation set (60/40), and then creates those two data sets.
+```{r}
+train_predictors<-training[,2:14]
+val_predictors<-validation[,2:14]
+
+train_labels<-training[,1]
+val_labels<-validation[,1]
+```
+This line of code separates the predictors (2:14) from what were are trying to predict, whether or not the customer accepted a Personal Loan (1). val=short for validation
+```{r}
+library(class)
+predicted_val_labels<-knn(train_predictors,val_predictors,cl=train_labels,k=5)
+
+head(predicted_val_labels)
+summary(predicted_val_labels)
+```
+Using the class package, this line of code runs knn based on our given predictors, using the hyperparamter 5, which we found through the train command earlier.
+```{r}
+library("gmodels")
+CrossTable(x=val_labels,y=predicted_val_labels,prop.chisq=FALSE)
+```
+QUESTION 3 ANSWER: This code creates the confusion matrix, 86 (bottom left) false negatives, 9 (top right) false positives. This means 95 of our 2000 predictions were incorrect, leading to 1905/2000 being correct, resulting in an accuracy of 95.25% according to this confusion matrix.
+```{r}
+customer<-read.csv("customer.csv")
+customer_prediction<-knn(train_predictors,customer,cl=train_labels,k=1)
+head(customer_prediction)
+```
+QUESTION 1 ANSWER: I created "customer" in Excel with the requested information from the assignment syllabus (Age = 40, Experience = 10, Income = 84, Family = 2, CCAvg = 2, Education_1 = 0, Education_2 = 
+1, Education_3 = 0, Mortgage = 0, Securities Account = 0, CD Account = 0, Online = 1, and 
+Credit Card = 1). I used k=1 as requested for question 1.
+
+I ran knn using this specific customer information instead of the set of 2000 validation predictors. The value returned was 1, or loan acceptance.
+```{r}
+customer_prediction<-knn(train_predictors,customer,cl=train_labels,k=5)
+head(customer_prediction)
+```
+QUESTION 4 ANSWER: This line of code runs the loan acceptance prediction for the same customer, returning a value of 1, or loan acceptance again, using the best k, or 5.
+```{r}
+#start of QUESTION 5
+training_index_Q5=createDataPartition(mydata2_normalized$Personal.Loan,p=0.5,list=FALSE)
+
+train_data_Q5=mydata2_normalized[training_index_Q5,]
+temp_Q5=mydata2_normalized[-training_index_Q5,]
+
+validation_index_Q5=createDataPartition(temp_Q5$Personal.Loan,p=0.6,list=FALSE)
+validation_data_Q5=temp_Q5[validation_index_Q5,]
+test_data_Q5=temp_Q5[-validation_index_Q5,]
+```
+QUESTION 5 ANSWER PART 1: The above code separates the the data into training, validation, and testing sets (50%,30%,20% respectively). I named all associated sets and indexes to have a "Q5" (question 5) ending, as to not be confused with the earlier training and validation sets and indexes.
+```{r}
+train_predictors_Q5<-train_data_Q5[,2:14]
+testing_predictors_Q5<-test_data_Q5[,2:14]
+
+train_labels_Q5<-train_data_Q5[,1]
+testing_labels_Q5<-test_data_Q5[,1]
+```
+This line of code separates the predictor variables from the variable we are trying to predict, loan acceptance, for question 5, using testing data instead of the validation data.
+```{r}
+library(class)
+predicted_testing_labels_Q5<-knn(train_predictors_Q5,testing_predictors_Q5,cl=train_labels_Q5,k=5)
+
+head(predicted_testing_labels_Q5)
+summary(predicted_testing_labels_Q5)
+```
+Using the class package, this line of code runs knn based on our given predictors, for the testing data instead of the validation data, using the hyperparamter 5, which we found through the train command earlier.
+```{r}
+library("gmodels")
+CrossTable(x=testing_labels_Q5,y=predicted_testing_labels_Q5,prop.chisq=FALSE)
+```
+QUESTION 5 ANSWER PART 5: This code creates the confusion matrix, 45 (bottom left) false negatives, 2 (top right) false positives. This means 47 of our 1000 predictions were incorrect, leading to 953/1000 being correct, resulting in an accuracy of 95.3% according to this confusion matrix.
+
+Compared to the confusion matrix of the validation set, which yielded 92.5%, this confusion matrix of the testing data is slightly more accurate, however it is important to note that it does use only half the data than that of the validation set did, earlier in this assignment.  I would say that both models are accurate predictors as to whether or not a customer will accept a loan.
+
+These models are very useful from a business standpoint, because now the bank can see what the customers who accept have in common, and what specific customers are more likely.  This will allow the bank to focus on specific things to improve, as well as make the bank aware of highly probable acceptance customers, who they can then focus on to further guarentee loan acceptance. 
+
+
+
