@@ -1,0 +1,63 @@
+---
+title: "ML_Assignment_3"
+author: "Ben Weisenburger"
+date: "2022-10-22"
+output: html_document
+---
+
+```{r}
+library(caret)
+library(ISLR)
+library(class)
+library(e1071)
+library(dplyr)
+library(reshape2)
+
+set.seed(123)
+
+mydata<-read.csv("UniversalBank.csv")
+
+index<-createDataPartition(mydata$Personal.Loan,p=.6,list=F)
+training<-mydata[index,]
+validation<-mydata[-index,]
+```
+The above lines of code load the relevant packages, the UniversalBank dataset, create an index to split the data into training and validation, and lastly creating the training and data sets (60/40) using this index.
+```{r}
+training_modified=training[training$Online != 0, ]  
+```
+This creates a modified version of the training set where we only see observations where Online=1, as the following part (Part A) asks that we analyze situations where the user is using Online.
+```{r}
+PartA_PT = melt(training_modified,id=c("CreditCard","Personal.Loan"),variable= "Online","Online"=1)
+PartA_PT_recast=dcast(PartA_PT,CreditCard+Personal.Loan~Online)
+PartA_PT_recast[,c(1:2,14)]
+```
+(PART A) This code creates a Pivot Table using the melt() function from the reshape package from the library.  As requested in Part A, we make the column "Online" by assigning it as the variable, and we make "CreditCard" and "Personal.Loan" the rows.
+
+(PART B) By looking at the pivot table, we can confirm that 57 of the 1799 customers in the training data set use Online and CreditCard, therefore making the odds of loan acceptance 3.168%
+```{r}
+table(training[,c(10,14)])
+table(training[,c(10,13)])
+table(training[,c(10)])
+```
+(PART C and D) The above 3 codes create  simple 1 row, 1 column pivot tables with the specified variables in part C.
+i. 91/(91+187) = 32.7%
+ii. 179/(179+99) = 64.4%
+iii. 278/(278+2722) = 9.3%
+iv. 792/(792+1930) = 29.1%
+v. 1620/(1620+1102) = 59.5%
+vi. 2722/(2722+278)= 90.7%
+```{r}
+Part_E=((91/(91+187))*(179/(179+99))*(278/(278+2722)))/(((91/(91+187))*(179/(179+99))*(278/(278+2722)))+((792/(792+1930))*(1620/(1620+1102))*2722/(2722+278)))
+```
+(Part E) using Naive Bayes, I calculated a probability of about 11.1% for P=(Loan=1 | CC=1, Online=1)
+
+(Part F) This is much higher than 3.168% that we calculated in Part B.  I believe that this value will be more accurate than the pivot table, because it is a more refined and complex method of combining conditional probabilities.
+```{r}
+naive.training=training[,c(10,13:14)]
+naive.validation=validation[,c(10,13:14)]
+Part_G=naiveBayes(Personal.Loan~.,data=naive.training)
+Part_G
+```
+(Part G) This code creates a modified training and validation dataset, which limit it down to the 3 variables we need. Then, the naiveBayes command is used to give the most accurate probability, which is 9.3%.
+
+In conclusion, neither our Part B or Part E prediction were perfectly accurate, however part E was much closer to the actual probability calculated in Part G.
