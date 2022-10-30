@@ -1,0 +1,71 @@
+---
+title: "ML Assignment 4"
+author: "Ben Weisenburger"
+date: "2022-10-28"
+output: html_document
+---
+```{r}
+library(tidyverse)
+library(factoextra)
+library(ISLR)
+library(flexclust)
+library(caret)
+
+set.seed(123)
+```
+The above chunk of code loads the relevant packages and sets the seed for the assignment.
+```{r}
+mydata<-read.csv("Pharmaceuticals.csv")
+mydata1<-mydata[,c(3:11)]
+```
+The above chunk of code loads the data for the assignment, and then creates a new dataset with only the 9 numerical variables.
+```{r}
+mydata2<-scale(mydata1)
+```
+This chunk of code uses the scale command to standardize our numerical data, so that the Euclidean distance in the K-means is not affected by the different units of measurements in the variables.
+```{r}
+fviz_nbclust(mydata2,kmeans,method="wss")
+```
+The above line of code utilizes the "elbow" method to predict the optimal number of clusters, found by where the returns become diminishing and not worth adding more clusters.  In this case, the "elbow" is about 3 clusters, and we will be using 3 clusters for clustering the pharmaceutical data.
+```{r}
+cluster<-kmeans(mydata2,centers=3,nstart=25)
+fviz_cluster(cluster,data=mydata2)
+```
+The above chunk of code and visualizes our K-means clustering algorithm based on the variables and predetermined k. 
+
+(PART A) I used the 9 numerical variables, after standardizing them, to build this cluster algorithm. As explained earlier in the assignment, I standardized the data to reduce the sensitivity for the distance metric, and I chose 3 clusters after utilizing the elbow method.
+```{r}
+cluster$centers
+cluster$size
+```
+(PART B) The cluster$centers command is a great way to get an idea of what is setting your clusters apart and causing variation.  This command helps one to get a better understanding interpreting the clusters with respect to the numerical values.
+
+Cluster 1 has the lowest market and asset turnover, yet the highest revenue growth, indicating that these are new, small, profitable companies.
+
+Cluster 2 has the lowest ROE, lowest ROA, lowest revenue growth, and lowest net profit margin, indicating that this is possibly a failing cluster of companies.
+
+Cluster 3 falls in the middle for the vast majority of the variables, indicating that this a cluster of safe, stable companies.
+
+
+(PART C) According to the instructions, Part C is asking if there is a pattern to numerical variables 10-12 not used in forming the clusters, however this is a bit confusing because Part A asked to use 1-9 numerical variables, which were all of them as there are only 9 numerical variables in the dataset.
+
+Assuming that Part C is asking for relation to the variables following the 9 numerical variables, such as Median_Recommendation (Buy Rating) and Location, it appears that there is no direct, strong correlation.
+
+For example, several companies in cluster 2 are recommended as "strong buys", however this does not seem to make sense, as described in part B, this cluster seems to be failing due to the low ROE, ROA, and overall growth and profit.
+```{r}
+cluster$centers
+
+distance<-get_dist(mydata2)
+fviz_dist(distance)
+```
+(PART D) I will once again view the centers of the clusters to get a better understanding and representation of where each variable falls into each cluster, in order to assign names to each cluster for part D. I also have used the fviz distance command to visualize the relationship/correlations between our companies.
+
+Based on my findings throughout this assignment, I will assign names/characteristics the clusters as follows:
+
+Cluster 1: NEW COMPANIES, SMALL MARKET SHARE, HIGH RISK
+
+Cluster 2: HIGH RISK, OVERPRICED, OVERVALUED/FAILING COMPANIES
+
+Cluster 3: STABLE, PROFITABLE COMAPNIES, LOW RISK
+
+
