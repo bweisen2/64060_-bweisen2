@@ -1,0 +1,68 @@
+---
+title: "ML Assignment 5"
+author: "Ben Weisenburger"
+date: "2022-11-18"
+output: html_document
+---
+
+```{r}
+library(cluster)
+library(stats)
+library(factoextra)
+mydata<-read.csv("Cereals.csv")
+```
+The above code loads the data set and relevant packages.
+```{r}
+mydata=na.omit(mydata)
+```
+The above code omits all missing values in the data set.
+```{r}
+mydata2=mydata[,4:16]
+mydata3=scale(mydata2)
+d<-dist(mydata3,method="euclidean")
+hc1<-hclust(d, method="complete")
+plot(hc1,cex=0.6,hang=-1)
+```
+The above line of code rids the non-numerical variables, scales the data, and runs a hierarchical clustering using Euclidean distance. 
+```{r}
+mydata_single<-agnes(mydata3,method="single")
+mydata_complete<-agnes(mydata3,method="complete")
+mydata_average<-agnes(mydata3,method="average")
+mydata_ward<-agnes(mydata3,method="ward")
+
+print(mydata_single$ac)
+print(mydata_complete$ac)
+print(mydata_average$ac)
+print(mydata_ward$ac)
+```
+The above code uses agnes to compare the clustering from single linkage, complete linkage, average linkage and ward.  We can see that ward is the best method, resulting in the best agglomerative coefficient outcome of about 0.905, compared to complete linkage in second best (0.835), average linkage at the third best (0.777), and lastly, single linkage at the worst (0.607).
+```{r}
+hc_diana<-diana(mydata3,metric="Euclidean")
+hc_diana$dc
+```
+The above code also used the diana method in addition to agnes, yielding a result of 0.830, which would be between our second best agnes, complete linkage, and third best agnes, average linkage.
+```{r}
+ward<-hclust(d,method="ward.D2")
+subgrp<-cutree(ward,k=4)
+table(subgrp)
+cereals<-as.data.frame(cbind(mydata3,subgrp))
+```
+The above code uses the ward method to apply hierarchical clustering. 
+```{r}
+round(hc1$height,3)
+plot(hc1)
+rect.hclust(hc1,k=4,border="red")
+```
+The above code determines the optimal clusters with highlighting the plotted "hc1" list that we created earlier.  Personally, I would not use any more than 4 clusters.  I could even see an argument for 3.  I tested 2, 3, 4 and 5. Using 4 clusters, the fourth cluster is quite small.  I would advise 4 clusters at the most, anymore and the groups will become too small and specific. 
+```{r}
+newcereals=mydata2
+clust=cbind(newcereals,subgrp)
+clust[clust$subgrp==1,]
+
+mean(clust[clust$subgrp==1,"rating"])
+mean(clust[clust$subgrp==2,"rating"])
+mean(clust[clust$subgrp==3,"rating"])
+mean(clust[clust$subgrp==4,"rating"])
+```
+The above code determines the cereal health ratings of each subgroup on average. Clearly, subgroup 1 is the healthiest with a mean rating of 73.8.  There are 3 cereals in this group.  While it isn't a ton, this offers the school cafeterias to still offer a variety of cereals and change it daily up to 3 times per week.  
+I do believe the data needs to be normalized to come to this conclusion, because different variables use different units of measurement. 
