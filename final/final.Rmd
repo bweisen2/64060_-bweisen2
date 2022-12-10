@@ -1,0 +1,65 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+```{r}
+library(caret)
+library(class)
+library(gmodels)
+library(dplyr)
+
+mydata<-read.csv("diabetes.csv")
+set.seed(122)
+```
+The above code loads relevant packages and imports the dataset into R.  I also set a seed for the code so I am working with the same random numbers throughout.
+```{r}
+model_mydata_normalized<-preProcess(mydata,method="range")
+mydata_normalized=predict(model_mydata_normalized,mydata)
+```
+Because the units of measure are different across the variables in my data, I have decided to normalize the data with the preProcess function so that a kNN analysis is more effective and accurate, I have normalized the data on a 0-1 scale, otherwise known as a min-max transformation.
+```{r}
+train_control<-trainControl(method="cv",number=10)
+mydata_normalized$Outcome<-as.factor(mydata_normalized$Outcome)
+model<-train(Outcome~Pregnancies+Glucose+BloodPressure+SkinThickness+Insulin+BMI+DiabetesPedigreeFunction+Age,data=mydata_normalized,method="knn",trControl=train_control)
+model
+```
+The above code uses the train command to optimize the best value for "k", our hyperparameter for k-NN, which ends up being 5.
+```{r}
+index<-createDataPartition(mydata_normalized$Outcome,p=0.8,list=FALSE)
+training<-mydata_normalized[index,]
+testing<-mydata_normalized[-index,]
+```
+The above code uses the createDataPartition command to split the normalized data into a 80% training group and a 20% testing group based on the variable Outcome.
+```{r}
+train_predictors<-training[,1:8]
+test_predictors<-testing[,1:8]
+
+train_labels<-training[,9]
+test_labels<-testing[,9]
+```
+This line of code separates the predictors (1:8) from what were are trying to predict, whether or not the patient has diabetes (9).
+```{r}
+predicted_test_labels<-knn(train_predictors,test_predictors,cl=train_labels,k=5)
+
+head(predicted_test_labels)
+summary(predicted_test_labels)
+```
+Using the class package, this line of code runs knn based on our given predictors, using the hyperparameter 9, which we found through the train command earlier.
+```{r}
+CrossTable(x=test_labels,y=predicted_test_labels,prop.chisq=FALSE)
+```
+The above code creates a confusion matrix comparing our predicted outcome with actual outcomes.  The accuracy of this kNN model is 75.16%, which means it can predict whether or not an individual has diabetes based on the 8 variables with an accuracy of slightly over 75%.
+```{r}
+summary(mydata_normalized)
+```
+
+```{r}
+glm(formula = Outcome~Pregnancies+Glucose+BloodPressure+SkinThickness+Insulin+BMI+DiabetesPedigreeFunction+Age, family = "binomial", data = mydata, 
+    na.action = na.exclude)
+```
+
